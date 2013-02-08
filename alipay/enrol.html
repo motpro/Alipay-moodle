@@ -1,0 +1,11 @@
+<div align="center">
+
+<p><?php print_string("paymentrequired") ?></p>
+<p><b><?php echo get_string('costway' , 'enrol_alipay') . ' : ' .$instancename; ?></b></p>
+<p><b><?php echo get_string("cost").": {$cost} {$instance->currency}"; ?></b></p>
+<p><img alt="<?php print_string('alipayaccepted', 'enrol_alipay') ?>" src="<?php echo $CFG->wwwroot .'/enrol/alipay/images/alipay.gif'?>" /></p>
+<p><?php print_string("paymentinstant") ?></p>
+ 
+<?php echo $html_text;?>
+
+</div>
