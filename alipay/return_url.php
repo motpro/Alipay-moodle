@@ -23,11 +23,14 @@ require_once("lib/alipay_notify.class.php");
 <html>
     <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>支付宝即时到账交易接口</title>
+	</head>
+    <body>
+
 <?php
 //计算得出通知验证结果
 $alipayNotify = new AlipayNotify($alipay_config);
 $verify_result = $alipayNotify->verifyReturn();
-
 if($verify_result) {//验证成功
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//请在这里加上商户的业务逻辑程序代码
@@ -36,11 +39,9 @@ if($verify_result) {//验证成功
     //获取支付宝的通知返回参数，可参考技术文档中页面跳转同步通知参数列表
 
 	//商户订单号
-
 	$out_trade_no = $_GET['out_trade_no'];
 
 	//支付宝交易号
-
 	$trade_no = $_GET['trade_no'];
 
 	//交易状态
@@ -59,13 +60,12 @@ if($verify_result) {//验证成功
         $data->$key = $value;
     }
 
-    $dingdan = $data->out_trade_no;		
-    $total   = $data->total_fee;		
+    $dingdan = $data->out_trade_no;		//获取订单号
+    $total   = $data->total_fee;		//获取总价格
 
     $enrol_info = $DB->get_record("enrol_alipay", array("trade_no"=>$dingdan));
 
     if (empty($enrol_info)) {
-        $errorreason = message_alipay_error_to_admin("Not a valid trade_no: ".$dingdan." no exists in enrol_alipay", $data);
         echo "订单不存在！";
         die;
     }
@@ -73,25 +73,21 @@ if($verify_result) {//验证成功
     $_GET['id']=$enrol_info->courseid;
 
     if (! $context = get_context_instance(CONTEXT_COURSE, $enrol_info->courseid)) {
-        $errorreason = message_alipay_error_to_admin("Not a valid context id", $data);
         include("$CFG->dirroot/enrol/alipay/return.php");die;
     }
 
     if (0!=$enrol_info->payment_status) {   // Make sure this order doesn't already pay
-        $errorreason = message_alipay_error_to_admin("Transaction $dingdan is being repeated!", $data);
         include("$CFG->dirroot/enrol/alipay/return.php");die;
 
     }
 
     if($seller_email!==$data->seller_email){
-       $errorreason = message_alipay_error_to_admin("Business email is {$data->seller_email} (not ".
-                    $seller_email.")", $data);
-        include("$CFG->dirroot/enrol/alipay/return.php");die;
+        //include("$CFG->dirroot/enrol/alipay/return.php");die;
     }
-
+    
     if (! $plugin_instance = $DB->get_record("enrol", array("enrol"=>'alipay',"courseid"=>$enrol_info->courseid,"status"=>0))) {
-        $errorreason = message_alipay_error_to_admin("Not a valid enrol instance ", $data);
-        include("$CFG->dirroot/enrol/alipay/return.php");die;
+        
+        //include("$CFG->dirroot/enrol/alipay/return.php");die;
     }
 
     // Check that amount paid is the correct amount
@@ -105,15 +101,15 @@ if($verify_result) {//验证成功
         $cost = format_float($cost, 2);
         $errorreason = message_alipay_error_to_admin("Amount paid is not enough ($total < $cost))", $data);
         include("$CFG->dirroot/enrol/alipay/return.php");die;
-
     }
+    
 
+  
     if($_GET['trade_status'] == 'TRADE_FINISHED' || $_GET['trade_status'] == 'TRADE_SUCCESS') {
 		//判断该笔订单是否在商户网站中已经做过处理
 			//如果没有做过处理，根据订单号（out_trade_no）在商户网站的订单系统中查到该笔订单的详细，并执行商户的业务程序
 			//如果有做过处理，不执行商户的业务程序
-			
-        $enrol_info->payment_status = 1; //已成功交易
+			    $enrol_info->payment_status = 1; //已成功交易
         $DB->update_record("enrol_alipay", $enrol_info);
         if ($plugin_instance->enrolperiod) {
             $timestart = time();
@@ -135,10 +131,13 @@ if($verify_result) {//验证成功
             $teacher = false;
         }
         include("$CFG->dirroot/enrol/alipay/return.php");
+        
+	echo '支付成功';
+	die;		
+        
     }
     else {
       echo "trade_status=".$_GET['trade_status'];
-      $errorreason = message_alipay_error_to_admin("Received an invalid payment notification!! ", $data);
     }
 		
 	echo "开通成功<br />";
@@ -150,12 +149,14 @@ if($verify_result) {//验证成功
 else {
     //验证失败
     //如要调试，请看alipay_notify.php页面的verifyReturn函数
-    echo "开通失败";
-    $errorreason = message_alipay_error_to_admin("Received an invalid payment notification!! (Fake payment?)", $data);
+    echo "验证失败";
+    include("$CFG->dirroot/enrol/alipay/return.php");
+}
+
+function alipay_sorry(){
+    global $CFG;
+    include("$CFG->dirroot/enrol/alipay/return.php");
 }
 ?>
-        <title>支付宝即时到账交易接口</title>
-	</head>
-    <body>
     </body>
 </html>
